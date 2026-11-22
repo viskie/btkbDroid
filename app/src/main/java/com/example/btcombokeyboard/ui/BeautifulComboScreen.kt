@@ -82,13 +82,41 @@ fun BeautifulComboScreen(
             }
         }
 
-        // Top area: trackpad on top-right 60%
-        Row(modifier = Modifier.weight(0.32f).fillMaxWidth()) {
-            Spacer(modifier = Modifier.weight(0.4f))
+        // Top area: trackpad fills the right 60% at full height; L/R buttons occupy the top-left 40%
+        Row(modifier = Modifier.weight(0.4f).fillMaxWidth()) {
+            Column(modifier = Modifier.weight(0.4f).fillMaxHeight()) {
+                Row(modifier = Modifier.height(32.dp).fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(SurfaceColor, RoundedCornerShape(6.dp))
+                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
+                            .clickable {
+                                onMouseMove(HidDescriptors.MOUSE_BUTTON_LEFT, 0, 0, 0)
+                                onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) { Text("L", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(SurfaceColor, RoundedCornerShape(6.dp))
+                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
+                            .clickable {
+                                onMouseMove(HidDescriptors.MOUSE_BUTTON_RIGHT, 0, 0, 0)
+                                onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) { Text("R", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                }
+            }
             Column(modifier = Modifier.weight(0.6f).fillMaxHeight()) {
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxHeight()
                         .fillMaxWidth()
                         .background(
                             brush = Brush.radialGradient(colors = listOf(Color(0xFF192038), SurfaceColor)),
@@ -126,34 +154,6 @@ fun BeautifulComboScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text("TRACKPAD", color = Color.Gray, fontSize = 10.sp)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.height(32.dp).fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(SurfaceColor, RoundedCornerShape(6.dp))
-                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
-                            .clickable {
-                                onMouseMove(HidDescriptors.MOUSE_BUTTON_LEFT, 0, 0, 0)
-                                onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) { Text("L", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(SurfaceColor, RoundedCornerShape(6.dp))
-                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
-                            .clickable {
-                                onMouseMove(HidDescriptors.MOUSE_BUTTON_RIGHT, 0, 0, 0)
-                                onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) { Text("R", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
                 }
             }
         }
