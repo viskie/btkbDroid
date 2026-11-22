@@ -118,12 +118,19 @@ class MainActivity : ComponentActivity() {
                     btHidManager.pairDevice(dev)
                 },
                 onConnectDevice = { dev ->
-                    val ok = btHidManager.connectToDevice(dev)
-                    if (ok) {
-                        connectedNameState.value = dev.name ?: dev.address
-                        statusMessageState.value = "Connect requested to ${dev.name ?: dev.address}"
+                    if (!btHidManager.isRegistered) {
+                        statusMessageState.value = "HID app not registered yet; wait and retry"
+                    } else if (dev.bondState != android.bluetooth.BluetoothDevice.BOND_BONDED) {
+                        btHidManager.pairDevice(dev)
+                        statusMessageState.value = "Pairing initiated with ${dev.name ?: dev.address}; connect after bonded"
                     } else {
-                        statusMessageState.value = "Connect failed/returned false for ${dev.name ?: dev.address}"
+                        val ok = btHidManager.connectToDevice(dev)
+                        if (ok) {
+                            connectedNameState.value = dev.name ?: dev.address
+                            statusMessageState.value = "Connect requested to ${dev.name ?: dev.address}"
+                        } else {
+                            statusMessageState.value = "Connect failed/returned false for ${dev.name ?: dev.address} (host must accept HID)"
+                        }
                     }
                     showDevicesState.value = false
                 },

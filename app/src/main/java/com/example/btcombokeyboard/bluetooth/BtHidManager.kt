@@ -15,6 +15,9 @@ class BtHidManager(private val context: Context) {
     private var hidDevice: BluetoothHidDevice? = null
     private var connectedHost: BluetoothDevice? = null
 
+    var isRegistered: Boolean = false
+        private set
+
     var onStatus: (String) -> Unit = {}
 
     val isConnected: Boolean get() = connectedHost != null
@@ -54,6 +57,7 @@ class BtHidManager(private val context: Context) {
         }
 
         override fun onAppStatusChanged(device: BluetoothDevice?, registered: Boolean) {
+            isRegistered = registered
             onStatus(if (registered) "HID app registered${device?.let { " for ${it.name ?: it.address}" } ?: ""}" else "HID app unregistered")
             Log.d("BtHidManager", "App status: registered=$registered device=${device?.name}")
         }
