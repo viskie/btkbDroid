@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val bondedDevicesState = mutableStateOf<List<BluetoothDevice>>(emptyList())
+    private val statusMessageState = mutableStateOf<String?>(null)
     private val discoveredDevicesState = mutableStateOf<List<BluetoothDevice>>(emptyList())
     private val connectedNameState = mutableStateOf<String?>(null)
     private val showDevicesState = mutableStateOf(false)
@@ -89,6 +90,7 @@ class MainActivity : ComponentActivity() {
         }
 
         btHidManager = BtHidManager(this)
+        btHidManager.onStatus = { msg -> statusMessageState.value = msg }
 
         if (permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
             hasPermissionsState.value = true
@@ -101,6 +103,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BeautifulComboScreen(
                 isConnected = btHidManager.isConnected,
+                statusMessage = statusMessageState.value,
                 connectedDeviceName = connectedNameState.value,
                 bondedDevices = bondedDevicesState.value,
                 discoveredDevices = discoveredDevicesState.value,
@@ -116,7 +119,12 @@ class MainActivity : ComponentActivity() {
                 },
                 onConnectDevice = { dev ->
                     val ok = btHidManager.connectToDevice(dev)
-                    connectedNameState.value = if (ok) (dev.name ?: dev.address) else connectedNameState.value
+                    if (ok) {
+                        connectedNameState.value = dev.name ?: dev.address
+                        statusMessageState.value = "Connect requested to ${dev.name ?: dev.address}"
+                    } else {
+                        statusMessageState.value = "Connect failed/returned false for ${dev.name ?: dev.address}"
+                    }
                     showDevicesState.value = false
                 },
                 onMakeDiscoverable = { makeDiscoverable() },

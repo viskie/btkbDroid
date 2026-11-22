@@ -15,6 +15,8 @@ class BtHidManager(private val context: Context) {
     private var hidDevice: BluetoothHidDevice? = null
     private var connectedHost: BluetoothDevice? = null
 
+    var onStatus: (String) -> Unit = {}
+
     val isConnected: Boolean get() = connectedHost != null
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -24,6 +26,7 @@ class BtHidManager(private val context: Context) {
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
             if (profile == BluetoothProfile.HID_DEVICE) {
                 hidDevice = proxy as BluetoothHidDevice
+                onStatus("HID profile connected, registering app...")
                 registerHidApp()
             }
         }
@@ -39,16 +42,38 @@ class BtHidManager(private val context: Context) {
     private val hidCallback = object : BluetoothHidDevice.Callback() {
         override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
             connectedHost = if (state == BluetoothProfile.STATE_CONNECTED) device else null
+            val stateName = when (state) {
+                BluetoothProfile.STATE_CONNECTED -> "Connected"
+                BluetoothProfile.STATE_CONNECTING -> "Connecting"
+                BluetoothProfile.STATE_DISCONNECTED -> "Disconnected"
+                BluetoothProfile.STATE_DISCONNECTING -> "Disconnecting"
+                else -> "State $state"
+            }
+            onStatus("$stateName: ${device.name ?: device.address}")
             Log.d("BtHidManager", "Connection state: $state with device: ${device.name}")
+        }
+
+        override fun onAppStatusChanged(device: BluetoothDevice?, registered: Boolean) {
+            onStatus(if (registered) "HID app registered${device?.let { " for ${it.name ?: it.address}" } ?: ""}" else "HID app unregistered")
+            Log.d("BtHidManager", "App status: registered=$registered device=${device?.name}")
         }
     }
 
     @SuppressLint("MissingPermission")
     fun init() {
+        if (bluetoothAdapter == null) {
+            onStatus("Bluetooth adapter not available")
+            return
+        }
         try {
-            bluetoothAdapter?.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE)
+            onStatus("Requesting HID profile proxy...")
+            bluetoothAdapter.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE)
         } catch (e: SecurityException) {
+            onStatus("Missing permission: ${e.message}")
             Log.e("BtHidManager", "Missing permission for HID profile", e)
+        } catch (e: Exception) {
+            onStatus("Init failed: ${e.message}")
+            Log.e("BtHidManager", "Init failed", e)
         }
     }
 
@@ -119,7 +144,13 @@ class BtHidManager(private val context: Context) {
             800, 9, 0, 11250, 11250
         )
 
-        hidDevice?.registerApp(sdpSettings, null, qosSettings, executor, hidCallback)
+        try {
+            val ok = hidDevice?.registerApp(sdpSettings, null, qosSettings, executor, hidCallback)
+            onStatus("registerApp called: $ok")
+        } catch (e: Exception) {
+            onStatus("registerApp failed: ${e.message}")
+            Log.e("BtHidManager", "registerApp failed", e)
+        }
     }
 
     @SuppressLint("MissingPermission")

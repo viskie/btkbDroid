@@ -28,6 +28,7 @@ val NeonPurple = Color(0xFFBD00FF)
 @Composable
 fun BeautifulComboScreen(
     isConnected: Boolean,
+    statusMessage: String?,
     connectedDeviceName: String?,
     bondedDevices: List<BluetoothDevice>,
     discoveredDevices: List<BluetoothDevice>,
@@ -193,6 +194,15 @@ fun BeautifulComboScreen(
         Spacer(modifier = Modifier.height(6.dp))
 
         // Media controls row
+        if (statusMessage != null) {
+            Text(
+                text = statusMessage,
+                color = Color.Yellow,
+                fontSize = 11.sp,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            )
+        }
+
         Row(modifier = Modifier.height(44.dp).fillMaxWidth()) {
             MediaKey("⏮", HidDescriptors.MEDIA_PREV, onMediaKey)
             MediaKey("⏯", HidDescriptors.MEDIA_PLAY_PAUSE, onMediaKey)
