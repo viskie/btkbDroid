@@ -43,87 +43,58 @@ fun BeautifulComboScreen(
     onMouseMove: (Int, Int, Int, Int) -> Unit,
     onMediaKey: (Int) -> Unit
 ) {
+    var capsLock by remember { mutableStateOf(false) }
+    var shiftOn by remember { mutableStateOf(false) }
+    var ctrlOn by remember { mutableStateOf(false) }
+    var altOn by remember { mutableStateOf(false) }
+
+    fun sendKey(code: Int, isLetter: Boolean) {
+        var mod = 0
+        if (ctrlOn) mod = mod or 0x01
+        if (altOn) mod = mod or 0x04
+        val useShift = shiftOn || (capsLock && isLetter)
+        if (useShift) mod = mod or 0x02
+        onKeyPress(mod, code)
+        if (shiftOn) shiftOn = false
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
-            .padding(8.dp)
+            .padding(6.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("CYBER COMBO REMOTE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("CYBER COMBO REMOTE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = if (isConnected) "● ${connectedDeviceName ?: "CONNECTED"}" else "○ DISCONNECTED",
                     color = if (isConnected) Color.Green else Color.Red,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 11.sp
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = onToggleDevices) { Text("Devices", color = CyberCyan, fontSize = 12.sp) }
+                Spacer(modifier = Modifier.width(6.dp))
+                TextButton(onClick = onToggleDevices) { Text("Devices", color = CyberCyan, fontSize = 11.sp) }
             }
         }
 
-        Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            // Left Half: Keyboard
-            Column(modifier = Modifier.weight(1.3f).fillMaxHeight()) {
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("1") { onKeyPress(0x00, 0x1E) }
-                    Keycap("2") { onKeyPress(0x00, 0x1F) }
-                    Keycap("3") { onKeyPress(0x00, 0x20) }
-                    Keycap("4") { onKeyPress(0x00, 0x21) }
-                    Keycap("⌫") { onKeyPress(0x00, 0x2A) }
-                }
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("Q") { onKeyPress(0x00, 0x14) }
-                    Keycap("W") { onKeyPress(0x00, 0x1A) }
-                    Keycap("E") { onKeyPress(0x00, 0x08) }
-                    Keycap("R") { onKeyPress(0x00, 0x15) }
-                    Keycap("T") { onKeyPress(0x00, 0x17) }
-                }
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("A") { onKeyPress(0x00, 0x04) }
-                    Keycap("S") { onKeyPress(0x00, 0x16) }
-                    Keycap("D") { onKeyPress(0x00, 0x07) }
-                    Keycap("F") { onKeyPress(0x00, 0x09) }
-                    Keycap("G") { onKeyPress(0x00, 0x0A) }
-                }
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("Z") { onKeyPress(0x00, 0x1D) }
-                    Keycap("X") { onKeyPress(0x00, 0x1B) }
-                    Keycap("C") { onKeyPress(0x00, 0x06) }
-                    Keycap("V") { onKeyPress(0x00, 0x19) }
-                    Keycap("B") { onKeyPress(0x00, 0x05) }
-                }
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("TAB") { onKeyPress(0x00, 0x2B) }
-                    Keycap("SPACE", modifier = Modifier.weight(2f)) { onKeyPress(0x00, 0x2C) }
-                    Keycap("ENTER ↵") { onKeyPress(0x00, 0x28) }
-                }
-                Row(modifier = Modifier.weight(1f)) {
-                    Keycap("←") { onKeyPress(0x00, 0x50) }
-                    Keycap("↑") { onKeyPress(0x00, 0x52) }
-                    Keycap("↓") { onKeyPress(0x00, 0x51) }
-                    Keycap("→") { onKeyPress(0x00, 0x4F) }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Right Half: Trackpad + mouse buttons
-            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+        // Top area: trackpad on top-right 60%
+        Row(modifier = Modifier.weight(0.32f).fillMaxWidth()) {
+            Spacer(modifier = Modifier.weight(0.4f))
+            Column(modifier = Modifier.weight(0.6f).fillMaxHeight()) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
                         .background(
                             brush = Brush.radialGradient(colors = listOf(Color(0xFF192038), SurfaceColor)),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
-                        .border(1.dp, CyberCyan, RoundedCornerShape(16.dp))
+                        .border(1.dp, CyberCyan, RoundedCornerShape(12.dp))
                         .pointerInput(Unit) {
                             awaitPointerEventScope {
                                 while (true) {
@@ -154,56 +125,135 @@ fun BeautifulComboScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("TRACKPAD\n1 finger move\n2 fingers scroll", color = Color.Gray, fontSize = 11.sp)
+                    Text("TRACKPAD", color = Color.Gray, fontSize = 10.sp)
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Row(modifier = Modifier.height(44.dp).fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(modifier = Modifier.height(32.dp).fillMaxWidth()) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(SurfaceColor, RoundedCornerShape(8.dp))
-                            .border(1.dp, NeonPurple, RoundedCornerShape(8.dp))
+                            .background(SurfaceColor, RoundedCornerShape(6.dp))
+                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
                             .clickable {
                                 onMouseMove(HidDescriptors.MOUSE_BUTTON_LEFT, 0, 0, 0)
                                 onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
                             },
                         contentAlignment = Alignment.Center
-                    ) { Text("LEFT", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
+                    ) { Text("L", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                    Spacer(modifier = Modifier.width(4.dp))
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(SurfaceColor, RoundedCornerShape(8.dp))
-                            .border(1.dp, NeonPurple, RoundedCornerShape(8.dp))
+                            .background(SurfaceColor, RoundedCornerShape(6.dp))
+                            .border(1.dp, NeonPurple, RoundedCornerShape(6.dp))
                             .clickable {
                                 onMouseMove(HidDescriptors.MOUSE_BUTTON_RIGHT, 0, 0, 0)
                                 onMouseMove(HidDescriptors.MOUSE_BUTTON_NONE, 0, 0, 0)
                             },
                         contentAlignment = Alignment.Center
-                    ) { Text("RIGHT", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                    ) { Text("R", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        // Media controls row
+        // Full keyboard
+        Column(modifier = Modifier.weight(0.62f).fillMaxWidth()) {
+            val keyH = Modifier.height(IntrinsicSize.Min)
+            // Row 1
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                K("`", 0x35, 1f, false, ::sendKey)
+                K("1", 0x1E, 1f, false, ::sendKey)
+                K("2", 0x1F, 1f, false, ::sendKey)
+                K("3", 0x20, 1f, false, ::sendKey)
+                K("4", 0x21, 1f, false, ::sendKey)
+                K("5", 0x22, 1f, false, ::sendKey)
+                K("6", 0x23, 1f, false, ::sendKey)
+                K("7", 0x24, 1f, false, ::sendKey)
+                K("8", 0x25, 1f, false, ::sendKey)
+                K("9", 0x26, 1f, false, ::sendKey)
+                K("0", 0x27, 1f, false, ::sendKey)
+                K("-", 0x2D, 1f, false, ::sendKey)
+                K("=", 0x2E, 1f, false, ::sendKey)
+                K("⌫", 0x2A, 1.4f, false, ::sendKey)
+            }
+            // Row 2
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                K("Tab", 0x2B, 1.4f, false, ::sendKey)
+                K("Q", 0x14, 1f, true, ::sendKey)
+                K("W", 0x1A, 1f, true, ::sendKey)
+                K("E", 0x08, 1f, true, ::sendKey)
+                K("R", 0x15, 1f, true, ::sendKey)
+                K("T", 0x17, 1f, true, ::sendKey)
+                K("Y", 0x1C, 1f, true, ::sendKey)
+                K("U", 0x18, 1f, true, ::sendKey)
+                K("I", 0x0C, 1f, true, ::sendKey)
+                K("O", 0x12, 1f, true, ::sendKey)
+                K("P", 0x13, 1f, true, ::sendKey)
+                K("[", 0x2F, 1f, false, ::sendKey)
+                K("]", 0x30, 1f, false, ::sendKey)
+                K("\\", 0x31, 1.2f, false, ::sendKey)
+            }
+            // Row 3
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                ModifierKey("Caps", capsLock) { capsLock = !capsLock }
+                K("A", 0x04, 1f, true, ::sendKey)
+                K("S", 0x16, 1f, true, ::sendKey)
+                K("D", 0x07, 1f, true, ::sendKey)
+                K("F", 0x09, 1f, true, ::sendKey)
+                K("G", 0x0A, 1f, true, ::sendKey)
+                K("H", 0x0B, 1f, true, ::sendKey)
+                K("J", 0x0D, 1f, true, ::sendKey)
+                K("K", 0x0E, 1f, true, ::sendKey)
+                K("L", 0x0F, 1f, true, ::sendKey)
+                K(";", 0x33, 1f, false, ::sendKey)
+                K("'", 0x34, 1f, false, ::sendKey)
+                K("Enter", 0x28, 1.6f, false, ::sendKey)
+            }
+            // Row 4
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                ModifierKey("Shift", shiftOn) { shiftOn = !shiftOn }
+                K("Z", 0x1D, 1f, true, ::sendKey)
+                K("X", 0x1B, 1f, true, ::sendKey)
+                K("C", 0x06, 1f, true, ::sendKey)
+                K("V", 0x19, 1f, true, ::sendKey)
+                K("B", 0x05, 1f, true, ::sendKey)
+                K("N", 0x11, 1f, true, ::sendKey)
+                K("M", 0x10, 1f, true, ::sendKey)
+                K(",", 0x36, 1f, false, ::sendKey)
+                K(".", 0x37, 1f, false, ::sendKey)
+                K("/", 0x38, 1f, false, ::sendKey)
+                ModifierKey("Shift", shiftOn) { shiftOn = !shiftOn }
+            }
+            // Row 5
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                ModifierKey("Ctrl", ctrlOn) { ctrlOn = !ctrlOn }
+                ModifierKey("Alt", altOn) { altOn = !altOn }
+                K("Space", 0x2C, 4f, false, ::sendKey)
+                K("←", 0x50, 1f, false, ::sendKey)
+                K("↑", 0x52, 1f, false, ::sendKey)
+                K("↓", 0x51, 1f, false, ::sendKey)
+                K("→", 0x4F, 1f, false, ::sendKey)
+                ModifierKey("Alt", altOn) { altOn = !altOn }
+                ModifierKey("Ctrl", ctrlOn) { ctrlOn = !ctrlOn }
+            }
+        }
+
         if (statusMessage != null) {
             Text(
                 text = statusMessage,
                 color = Color.Yellow,
-                fontSize = 11.sp,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                fontSize = 10.sp,
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
             )
         }
 
-        Row(modifier = Modifier.height(44.dp).fillMaxWidth()) {
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Row(modifier = Modifier.height(36.dp).fillMaxWidth()) {
             MediaKey("⏮", HidDescriptors.MEDIA_PREV, onMediaKey)
             MediaKey("⏯", HidDescriptors.MEDIA_PLAY_PAUSE, onMediaKey)
             MediaKey("⏭", HidDescriptors.MEDIA_NEXT, onMediaKey)
@@ -268,17 +318,33 @@ fun BeautifulComboScreen(
 }
 
 @Composable
-fun RowScope.Keycap(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun RowScope.K(label: String, code: Int, weight: Float, isLetter: Boolean, onKey: (Int, Boolean) -> Unit) {
     Box(
-        modifier = modifier
-            .weight(1f)
+        modifier = Modifier
+            .weight(weight)
             .fillMaxHeight()
-            .padding(2.dp)
-            .background(SurfaceColor, RoundedCornerShape(8.dp))
-            .clickable { onClick() },
+            .padding(1.dp)
+            .background(SurfaceColor, RoundedCornerShape(6.dp))
+            .clickable { onKey(code, isLetter) },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+    }
+}
+
+@Composable
+fun RowScope.ModifierKey(label: String, active: Boolean, onToggle: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .padding(1.dp)
+            .background(if (active) NeonPurple else SurfaceColor, RoundedCornerShape(6.dp))
+            .border(1.dp, CyberCyan, RoundedCornerShape(6.dp))
+            .clickable { onToggle() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp)
     }
 }
 
