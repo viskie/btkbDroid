@@ -45,7 +45,63 @@ class BtHidManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun init() {
-        bluetoothAdapter?.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE)
+        try {
+            bluetoothAdapter?.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE)
+        } catch (e: SecurityException) {
+            Log.e("BtHidManager", "Missing permission for HID profile", e)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun getBondedDevices(): List<BluetoothDevice> {
+        return try {
+            bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
+        } catch (e: SecurityException) {
+            Log.e("BtHidManager", "Missing permission for bonded devices", e)
+            emptyList()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connectToDevice(device: BluetoothDevice): Boolean {
+        return try {
+            hidDevice?.connect(device) ?: false
+        } catch (e: SecurityException) {
+            Log.e("BtHidManager", "Missing permission for connect", e)
+            false
+        } catch (e: Exception) {
+            Log.e("BtHidManager", "Connect failed", e)
+            false
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun startDiscovery(): Boolean {
+        return try {
+            bluetoothAdapter?.cancelDiscovery()
+            bluetoothAdapter?.startDiscovery() ?: false
+        } catch (e: SecurityException) {
+            Log.e("BtHidManager", "Missing permission for discovery", e)
+            false
+        } catch (e: Exception) {
+            Log.e("BtHidManager", "Discovery failed", e)
+            false
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun stopDiscovery() {
+        try { bluetoothAdapter?.cancelDiscovery() } catch (_: Exception) {}
+    }
+
+    @SuppressLint("MissingPermission")
+    fun pairDevice(device: BluetoothDevice): Boolean {
+        return try {
+            device.createBond()
+        } catch (e: Exception) {
+            Log.e("BtHidManager", "Pairing failed", e)
+            false
+        }
     }
 
     @SuppressLint("MissingPermission")

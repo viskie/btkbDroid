@@ -16,6 +16,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.bluetooth.BluetoothDevice
 import androidx.compose.ui.unit.sp
 import com.example.btcombokeyboard.bluetooth.HidDescriptors
 
@@ -27,6 +28,16 @@ val NeonPurple = Color(0xFFBD00FF)
 @Composable
 fun BeautifulComboScreen(
     isConnected: Boolean,
+    connectedDeviceName: String?,
+    bondedDevices: List<BluetoothDevice>,
+    discoveredDevices: List<BluetoothDevice>,
+    showDevices: Boolean,
+    onToggleDevices: () -> Unit,
+    onRefreshDevices: () -> Unit,
+    onStartScan: () -> Unit,
+    onPairDevice: (BluetoothDevice) -> Unit,
+    onConnectDevice: (BluetoothDevice) -> Unit,
+    onMakeDiscoverable: () -> Unit,
     onKeyPress: (Int, Int) -> Unit,
     onMouseMove: (Int, Int, Int, Int) -> Unit,
     onMediaKey: (Int) -> Unit
@@ -43,12 +54,16 @@ fun BeautifulComboScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("CYBER COMBO REMOTE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(
-                text = if (isConnected) "● CONNECTED" else "○ DISCONNECTED",
-                color = if (isConnected) Color.Green else Color.Red,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (isConnected) "● ${connectedDeviceName ?: "CONNECTED"}" else "○ DISCONNECTED",
+                    color = if (isConnected) Color.Green else Color.Red,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onToggleDevices) { Text("Devices", color = CyberCyan, fontSize = 12.sp) }
+            }
         }
 
         Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -185,6 +200,59 @@ fun BeautifulComboScreen(
             MediaKey("🔉", HidDescriptors.MEDIA_VOL_DOWN, onMediaKey)
             MediaKey("🔊", HidDescriptors.MEDIA_VOL_UP, onMediaKey)
             MediaKey("🔇", HidDescriptors.MEDIA_MUTE, onMediaKey)
+        }
+
+        if (showDevices) {
+            AlertDialog(
+                onDismissRequest = onToggleDevices,
+                title = { Text("Bluetooth Devices", color = Color.White) },
+                text = {
+                    Column {
+                        Text("Make this device discoverable, then pair/connect from the host.", color = Color.Gray, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onMakeDiscoverable) { Text("Make Discoverable (5 min)") }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onRefreshDevices) { Text("Refresh bonded devices") }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onStartScan) { Text("Scan for nearby devices") }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (discoveredDevices.isNotEmpty()) {
+                            Text("Discovered:", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            discoveredDevices.forEach { dev ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(dev.name ?: "Unknown", color = Color.White, fontSize = 13.sp)
+                                        Text(dev.address, color = Color.Gray, fontSize = 11.sp)
+                                    }
+                                    Button(onClick = { onPairDevice(dev) }) { Text("Pair") }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        bondedDevices.forEach { dev ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(dev.name ?: "Unknown", color = Color.White, fontSize = 13.sp)
+                                    Text(dev.address, color = Color.Gray, fontSize = 11.sp)
+                                }
+                                Button(onClick = { onConnectDevice(dev) }) { Text("Connect") }
+                            }
+                        }
+                        if (bondedDevices.isEmpty()) {
+                            Text("No bonded devices. Pair from system settings or make discoverable.", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = onToggleDevices) { Text("Close", color = CyberCyan) } }
+            )
         }
     }
 }
