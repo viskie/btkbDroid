@@ -1,0 +1,502 @@
+Here is an upgraded, modular version of the yellow/amber ASCII terminal admin panel, featuring a boot/login gate, pure ASCII box-drawing frames, live ASCII sparkline charts, and keyboard shortcuts (F1–F4).
+Save the code below as terminal-admin.html and open it in your browser.
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TERM//ADMIN v5.0 [AMBER]</title>
+  <style>
+    :root {
+      --bg: #090700;
+      --panel: #110d00;
+      --yellow: #ffcc00;
+      --yellow-bright: #ffe66d;
+      --yellow-dim: #6e5200;
+      --glow: rgba(255, 204, 0, 0.32);
+      --alert: #ff5500;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--yellow);
+      font-family: "Courier New", Courier, "Lucida Console", monospace;
+      font-size: 14px;
+      line-height: 1.4;
+      padding: 14px;
+      min-height: 100vh;
+      text-shadow: 0 0 5px var(--glow);
+      user-select: none;
+    }
+
+    /* CRT Scanline Effect */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.28) 0px,
+        rgba(0, 0, 0, 0.28) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .wrap { max-width: 1320px; margin: 0 auto; }
+
+    /* ASCII Header & Top Strip */
+    pre.banner {
+      color: var(--yellow-bright);
+      font-size: 11px;
+      line-height: 1.1;
+      overflow-x: auto;
+      margin-bottom: 10px;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      border: 1px solid var(--yellow);
+      background: var(--panel);
+      padding: 6px 12px;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .inv {
+      background: var(--yellow);
+      color: var(--bg);
+      padding: 0 6px;
+      font-weight: bold;
+      text-shadow: none;
+    }
+
+    /* Layout Grid */
+    .layout {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 850px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* Pure ASCII-Style Frame */
+    .frame {
+      border: 1px solid var(--yellow);
+      background: var(--panel);
+      padding: 14px 12px 12px;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .frame-label {
+      position: absolute;
+      top: -10px;
+      left: 10px;
+      background: var(--bg);
+      padding: 0 6px;
+      color: var(--yellow-bright);
+      font-weight: bold;
+    }
+
+    /* Navigation */
+    .menu { list-style: none; }
+    .menu li {
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+    .menu li:hover, .menu li.active {
+      background: var(--yellow);
+      color: var(--bg);
+      text-shadow: none;
+      font-weight: bold;
+    }
+
+    /* Telemetry & ASCII Sparkline */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-box {
+      border: 1px dashed var(--yellow-dim);
+      padding: 8px 10px;
+    }
+
+    .stat-big {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--yellow-bright);
+      margin: 2px 0;
+    }
+
+    .sparkline {
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: var(--yellow-bright);
+    }
+
+    /* Data Table */
+    .scroll-x { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      user-select: text;
+    }
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px dashed var(--yellow-dim);
+      white-space: nowrap;
+    }
+    th {
+      color: var(--yellow-bright);
+      border-bottom: 1px solid var(--yellow);
+    }
+    tr:hover td { background: rgba(255, 204, 0, 0.08); }
+
+    .btn {
+      background: transparent;
+      border: 1px solid var(--yellow);
+      color: var(--yellow);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 2px 7px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: var(--yellow);
+      color: var(--bg);
+      text-shadow: none;
+      font-weight: bold;
+    }
+
+    /* Terminal Console */
+    .tty-log {
+      height: 170px;
+      overflow-y: auto;
+      background: #050400;
+      border: 1px solid var(--yellow-dim);
+      padding: 8px;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      user-select: text;
+    }
+
+    .tty-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tty-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--yellow);
+      color: var(--yellow-bright);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      padding: 3px 0;
+      text-shadow: 0 0 5px var(--glow);
+    }
+
+    /* Modal / Login Overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 7, 0, 0.94);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 16px;
+    }
+
+    .login-box {
+      border: 2px solid var(--yellow);
+      background: var(--bg);
+      padding: 20px;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    .warn { color: var(--alert); font-weight: bold; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Optional Auth Lock Overlay -->
+<!--  <div class="overlay" id="lockScreen">
+    <div class="login-box">
+      <pre style="color:var(--yellow-bright); margin-bottom:12px;">
++---------------------------------------+
+
+|  RESTRICTED MAINFRAME ACCESS // TTY0  |
++---------------------------------------+</pre>
+      <p style="margin-bottom:12px;">AUTH REQUIRED. PRESS ENTER OR CLICK BELOW TO ESTABLISH SESSION.</p>
+      <div style="margin-bottom:12px;">
+        <div>OPERATOR: <span class="inv">SYS_ADMIN</span></div>
+        <div style="margin-top:6px;">KEY_HASH: <span>SHA256::9F84C2...VERIFIED</span></div>
+      </div>
+      <button class="btn" style="width:100%; padding:8px; font-size:14px;" onclick="unlockTerminal()">[ INITIALIZE_SESSION ]</button>
+    </div>
+  </div>
+-->
+  <div class="wrap">
+<pre class="banner">
++======================================================================================+
+
+|  __   __ _____ _     _     _____  _    _      ___  ______ ___  ___ _____ _   _       |
+|  \ \ / /|  ___| |   | |   |  _  || |  | |    / _ \ |  _  \|  \/  ||_   _| \ | |      |
+|   \ V / | |__ | |   | |   | | | || |  | |   / /_\ \| | | || .  . |  | | |  \| |      |
+|    \ /  |  __|| |   | |   | | | || |/\| |   |  _  || | | || |\/| |  | | | . ` |      |
+|    | |  | |___| |___| |___\ \_/ /\  /\  /   | | | || |/ / | |  | | _| |_| |\  |      |
+|    \_/  \____/\_____|_____/\___/  \/  \/    \_| |_/|___/  \_|  |_/ \___/\_| \_/      |
++======================================================================================+</pre>
+
+    <div class="status-strip">
+      <div><span class="inv">TTY-01</span> HOST: <strong>YELLOW-NODE-04</strong></div>
+      <div>LINK: <strong>10GbE UP</strong></div>
+      <div>LOAD: <strong id="topLoad">0.34 0.41 0.29</strong></div>
+      <div>TIME: <strong id="sysClock">--:--:--</strong></div>
+    </div>
+
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside>
+        <div class="frame">
+          <div class="frame-label">+--[ MODULES ]--+</div>
+          <ul class="menu" id="navList">
+            <li class="active" data-tab="overview"><span>&gt; OVERVIEW</span><span>[F1]</span></li>
+            <li data-tab="users"><span>&gt; OPERATORS</span><span>[F2]</span></li>
+            <li data-tab="logs"><span>&gt; AUDIT_LOG</span><span>[F3]</span></li>
+            <li data-tab="firewall"><span>&gt; FIREWALL</span><span>[F4]</span></li>
+          </ul>
+        </div>
+
+        <div class="frame">
+          <div class="frame-label">+--[ MACROS ]--+</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn" onclick="execCmd('diag')">[ RUN DIAGNOSTICS ]</button>
+            <button class="btn" onclick="execCmd('sync')">[ SYNC CLUSTER ]</button>
+            <button class="btn" onclick="execCmd('lock')">[ LOCK TERMINAL ]</button>
+            <button class="btn" onclick="execCmd('clear')">[ WIPE CONSOLE ]</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Panel -->
+      <main>
+        <!-- Live ASCII Gauges & Sparkline -->
+        <div class="frame">
+          <div class="frame-label">+--[ REALTIME_TELEMETRY ]--+</div>
+          <div class="stat-row">
+            <div class="stat-box">
+              <div>CPU_UTILIZATION</div>
+              <div class="stat-big" id="cpuText">38%</div>
+              <div id="cpuBar">[███████░░░░░░░░░░░░░]</div>
+            </div>
+            <div class="stat-box">
+              <div>MEMORY_POOL</div>
+              <div class="stat-big" id="ramText">20.4 / 32 GB</div>
+              <div id="ramBar">[████████████░░░░░░░░]</div>
+            </div>
+            <div class="stat-box">
+              <div>NET_THROUGHPUT_HISTORY</div>
+              <div class="stat-big" id="netText">412 Mbps</div>
+              <div class="sparkline" id="sparkline">▂▃▅▃▆▇▄▃▅▆▄▂</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Table View -->
+        <div class="frame">
+          <div class="frame-label" id="panelTitle">+--[ SYSTEM_OVERVIEW ]--+</div>
+          <div class="scroll-x">
+            <table>
+              <thead id="tHead"></thead>
+              <tbody id="tBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Interactive Command Shell -->
+        <div class="frame">
+          <div class="frame-label">+--[ ROOT_SHELL ]--+</div>
+          <div class="tty-log" id="ttyLog">[OK] YELLOW-ADMIN v5.0 ready.
+[INFO] Press F1-F4 to switch modules or type 'help' below.</div>
+          <div class="tty-input-row">
+            <span>admin@yellow-node:~#</span>
+            <input type="text" id="cmdBox" class="tty-input" placeholder="help | diag | sync | lock | clear" autocomplete="off" />
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const datasets = {
+overview: {
+title: "+--[ ACTIVE_SERVICES ]--+",
+cols: ["ID", "SERVICE", "PORT", "MEM", "HEALTH", "CTRL"],
+rows: [
+["01", "api-gateway", "8080", "240MB", "NOMINAL", "RESTART"],
+["02", "auth-daemon", "9001", "112MB", "NOMINAL", "RESTART"],
+["03", "worker-queue", "6379", "510MB", "DEGRADED", "FLUSH"],
+["04", "metrics-exporter", "9100", "48MB", "NOMINAL", "PING"]
+]
+},
+users: {
+title: "+--[ OPERATOR_ACCESS_CONTROL ]--+",
+cols: ["UID", "USERNAME", "CLEARANCE", "SESSION", "STATUS", "CTRL"],
+rows: [
+["100", "root_admin", "LEVEL_5", "TTY-01", "ACTIVE", "AUDIT"],
+["104", "ops_kiran", "LEVEL_3", "SSH-04", "ACTIVE", "KICK"],
+["109", "sec_bot", "LEVEL_4", "DAEMON", "ACTIVE", "ROTATE"],
+["112", "temp_vendor", "LEVEL_1", "NONE", "SUSPENDED", "ENABLE"]
+]
+},
+logs: {
+title: "+--[ KERNEL_&_SECURITY_LOGS ]--+",
+cols: ["TIMESTAMP", "SUBSYSTEM", "EVENT_CODE", "MESSAGE", "LEVEL", "CTRL"],
+rows: [
+["20:38:11", "SSHD", "AUTH_OK", "Accepted pubkey for root_admin", "INFO", "TRACE"],
+["20:35:44", "KERNEL", "MEM_TRIM", "Reclaimed 512MB slab cache", "INFO", "TRACE"],
+["20:29:02", "FIREWALL", "PKT_DROP", "Blocked syn flood from 185.220.x.x", "ALERT", "BAN_IP"],
+["20:14:19", "CRON", "JOB_DONE", "Snapshot backup completed", "INFO", "TRACE"]
+]
+},
+firewall: {
+title: "+--[ IPTABLES_PACKET_FILTER ]--+",
+cols: ["RULE", "CHAIN", "PROTO", "PORT", "POLICY", "CTRL"],
+rows: [
+["#01", "INPUT", "TCP", "22", "ALLOW_VPN", "EDIT"],
+["#02", "INPUT", "TCP", "443", "ACCEPT", "EDIT"],
+["#03", "INPUT", "UDP", "51820", "ACCEPT", "EDIT"],
+["#04", "FORWARD", "ALL", "*", "DROP", "TOGGLE"]
+]
+}
+};
+function renderTab(key) {
+const d = datasets[key];
+document.getElementById("panelTitle").textContent = d.title;
+document.getElementById("tHead").innerHTML =
+"" + (c => <th>${c}</th>).join("") + "";
+document.getElementById("tBody").innerHTML = (r => {
+const cells = r.slice(0, -1).map(val => {
+const warn = ["DEGRADED", "SUSPENDED", "ALERT", "DROP"].includes(val) ? "warn" : "";
+return <td class="${warn}">${val}</td>;
+}).join("");
+const action = r[r.length - 1];
+return <tr>${cells}<td><button class="btn" onclick="triggerAction('${r}', '${action}')">[${action}]</button></td></tr>;
+}).join("");
+}
+function triggerAction(id, act) {
+writeLog([EXEC] Target <${id}> -> executed [${act}] successfully.);
+}
+// Navigation & F1-F4 Hotkeys
+const tabs = ["overview", "users", "logs", "firewall"];
+document.querySelectorAll("#navList li").forEach((li, idx) => {
+li.addEventListener("click", () => switchTab(tabs[idx]));
+});
+function switchTab(tabKey) {
+document.querySelectorAll("#navList li").forEach(el => {
+el.classList.toggle("active",  === tabKey);
+});
+renderTab(tabKey);
+writeLog([VIEW] Loaded module: ${tabKey.toUpperCase()});
+}
+window.addEventListener("keydown", (e) => {
+if (e.key === "Enter" && !document.getElementById("lockScreen").classList.contains("hidden")) {
+unlockTerminal();
+}
+const fMap = { F1: "overview", F2: "users", F3: "logs", F4: "firewall" };
+if (fMap[e.key]) {
+e.preventDefault();
+switchTab(fMap[e.key]);
+}
+});
+// Lock / Unlock
+function unlockTerminal() {
+document.getElementById("lockScreen").classList.add("hidden");
+document.getElementById("cmdBox").focus();
+writeLog("[AUTH] Session unlocked by SYS_ADMIN.");
+}
+// Console Commands
+const ttyLog = document.getElementById("ttyLog");
+const cmdBox = document.getElementById("cmdBox");
+function writeLog(msg) {
+ttyLog.textContent += "\n" + msg;
+ttyLog.scrollTop = ttyLog.scrollHeight;
+}
+function execCmd(raw) {
+const cmd = raw.trim().toLowerCase();
+if (!cmd) return;
+writeLog(admin@yellow-node:~# ${raw});
+if (cmd === "help") {
+writeLog("COMMANDS: help, diag, sync, lock, clear, overview, users, logs, firewall");
+} else if (cmd === "diag") {
+writeLog("[DIAG] Storage SMART: OK | ECC RAM: 0 errors | Temp: 44C | Fan: 2100 RPM");
+} else if (cmd === "sync") {
+writeLog("[SYNC] Replicated state across 4 cluster nodes in 18ms.");
+} else if (cmd === "lock") {
+document.getElementById("lockScreen").classList.remove("hidden");
+} else if (cmd === "clear") {
+ttyLog.textContent = "[CONSOLE WIPED]";
+} else if (tabs.includes(cmd)) {
+switchTab(cmd);
+} else {
+writeLog([ERR] Command not found: '${cmd}');
+}
+}
+cmdBox.addEventListener("keydown", (e) => {
+if (e.key === "Enter") {
+execCmd(cmdBox.value);
+cmdBox.value = "";
+}
+});
+// Live Clock, Bars & ASCII Sparkline
+const bars = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+let sparkHistory =;
+setInterval(() => {
+document.getElementById("sysClock").textContent = new Date().toTimeString().split(" ");
+const cpu = Math.floor(20 + Math.random() * 55);
+const filled = Math.round((cpu / 100) * 20);
+document.getElementById("cpuText").textContent = cpu + "%";
+document.getElementById("cpuBar").textContent = "[" + "█".repeat(filled) + "░".repeat(20 - filled) + "]";
+const nextSpark = Math.floor(1 + Math.random() * 7);
+sparkHistory.push(nextSpark);
+sparkHistory.shift();
+document.getElementById("sparkline").textContent = (n => bars[n]).join("");
+document.getElementById("netText").textContent = (nextSpark * 95 + 110) + " Mbps";
+}, 1500);
+renderTab("overview");
+
+
+
+### What's New in This Version
+* **Auth Lock Gate:** Starts with a mainframe lock screen (press `Enter` or click `[ INITIALIZE_SESSION ]` to enter; type `lock` anytime to re-lock).
+* **Live ASCII Sparkline:** Uses Unicode block steps (`▂▃▄▅▆▇█`) for real-time network throughput visualization alongside CPU and RAM progress bars.
+* **Keyboard Shortcuts:** Supports `F1`–`F4` hotkeys to switch between **Overview**, **Operators**, **Audit Log**, and **Firewall** tables.
+
+<FollowUp>
+Would you like me to customize this further with:
+* **Data entry forms** (e.g., an ASCII modal to add users or firewall rules)
+* **Backend integration** (connecting the tables and shell to a REST API or WebSocket)
+* **Export functionality** (downloading logs or table views as `.txt` / `.csv`)
+</FollowUp>
